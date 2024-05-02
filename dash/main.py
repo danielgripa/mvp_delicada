@@ -1,6 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
 import streamlit as st
+import os
 
 # Função para organizar o resumo de transferências e compras em um DataFrame
 def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
@@ -44,13 +45,13 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
     return df_resumo_ajuste, df_produtos_compra
 
 # Dados de conexão com o banco de dados
-db_uri = {URL}
+db_uri = os.environ.get("URL")
 
 # Criar uma engine SQLAlchemy
 engine = create_engine(db_uri)
 
 # Definir a consulta SQL
-query = {QUERY}
+query = os.environ.get("QUERY")
 
 # Executar a consulta e carregar o resultado em um DataFrame
 with engine.connect() as conn:
