@@ -44,20 +44,13 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
     return df_resumo_ajuste, df_produtos_compra
 
 # Dados de conexão com o banco de dados
-db_uri = 'postgresql://tcemloyt:F5_U-T4x2GoOvrKrhtr2xtSR4clXdI3S@isabelle.db.elephantsql.com/tcemloyt'
+db_uri = {URL}
 
 # Criar uma engine SQLAlchemy
 engine = create_engine(db_uri)
 
 # Definir a consulta SQL
-query = """
-SELECT e.*, ent.nk_entidade, ent.nm_entidade, pg.nk_produto_grade, pg.nm_produto
-FROM dw_estoque.ft_estoque AS e
-LEFT JOIN dw_estoque.dim_entidade AS ent
-ON e.sk_entidade = ent.sk_entidade
-LEFT JOIN dw_estoque.dim_produto_grade AS pg
-ON e.sk_produto_grade = pg.sk_produto_grade;
-"""
+query = {QUERY}
 
 # Executar a consulta e carregar o resultado em um DataFrame
 with engine.connect() as conn:
