@@ -35,6 +35,7 @@ SQLAlchemy==2.0.29
 streamlit==1.33.0
 tenacity==8.2.3
 toml==0.10.2
+openpyxl==3.1.2
 toolz==0.12.1
 tornado==6.4
 typing_extensions==4.11.0
