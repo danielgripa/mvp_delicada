@@ -49,6 +49,13 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual, df_produto_
     df_resumo_ajuste = df_resumo_ajuste.merge(df_produto_ABC, left_on = "id_produto", right_on = "nk_produto_grade")
     df_produtos_compra = df_produtos_compra.merge(df_produto_ABC, left_on = "id_produto", right_on = "nk_produto_grade")
 
+    # Remover a coluna nk_produto_grade pois ja existe um id_produto na tabela anterior
+    df_resumo_ajuste.drop('nk_produto_grade', axis = 1, inplace = True)
+    df_produtos_compra.drop('nk_produto_grade', axis = 1, inplace = True)
+
+    # Resetar o índice de ambos os DataFrames
+    df_resumo_ajuste.reset_index(drop=True, inplace=True)
+    df_produtos_compra.reset_index(drop=True, inplace=True)
 
     return df_resumo_ajuste, df_produtos_compra
 
