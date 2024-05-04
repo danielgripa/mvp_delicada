@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 # Função para organizar o resumo de transferências e compras em um DataFrame
-def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
+def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual, df_produto_ABC):
     resumo_ajuste = []
     produtos_compra = []
 
@@ -28,7 +28,8 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
             transferencia_total = min(total_deficit, total_cobertura)
 
             resumo_ajuste.append({
-                "produto": f"{produto_grade} - {nm_produto}",
+                "id_produto": produto_grade,
+                "descricao": nm_produto,
                 "doadores": doadores_str,
                 "receptores": receptores_str,
                 "transferencia_total": transferencia_total
@@ -36,12 +37,18 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
         else:
             saldo_necessario = abs(total_deficit + total_cobertura)
             produtos_compra.append({
-                "produto": f"{produto_grade} - {nm_produto}",
+                "id_produto": produto_grade,
+                "descricao": nm_produto,
                 "saldo_necessario": saldo_necessario
             })
 
     df_resumo_ajuste = pd.DataFrame(resumo_ajuste)
     df_produtos_compra = pd.DataFrame(produtos_compra)
+
+    # Adicionar Curva ABC
+    df_resumo_ajuste = df_resumo_ajuste.merge(df_produto_ABC, left_on = "id_produto", right_on = "nk_produto_grade")
+    df_produtos_compra = df_produtos_compra.merge(df_produto_ABC, left_on = "id_produto", right_on = "nk_produto_grade")
+
 
     return df_resumo_ajuste, df_produtos_compra
 
@@ -103,47 +110,86 @@ df['proporcao_vendas_cumulativa'] = df['vendas_ultimo_mes'].cumsum() / df['venda
 
 df['CURVA_ABC'] = df['proporcao_vendas_cumulativa'].apply(classificar_curva_abc)
 
-# Ordenando o DataFrame
-df = df.sort_values(by=['nk_entidade', 'sk_data', 'nk_produto_grade'], ascending=[True, False, True])
+# Ordenando o DataFrame para manter apenas as linhas mais recentes de estoque de cada produto e entidade
+df = df.sort_values(by=['nk_entidade', 'nk_produto_grade', 'sk_data'], ascending=[True, True, False])
 
-
+# Removendo as duplicatas mais antigas ficando apenas com o estoque mais recente
 df_atual = df.drop_duplicates(subset=['nk_entidade', 'nk_produto_grade'])
+
+# Criando coluna Curva_ABC
+# Ordenando o DataFrame por vendas em ordem decrescente
+df_atual = df_atual.sort_values(by='vendas_ultimo_mes', ascending=False)
+
+
+# Criando um dataframe de produto_ABC para calcular a curva ABC
+
+# Agrupando por produto e somando as vendas
+df_produto_ABC = df_atual.groupby('nk_produto_grade')['vendas_ultimo_mes'].sum().reset_index()
+# Classificando as qtd de vendas do maior para o menor
+df_produto_ABC = df_produto_ABC.sort_values(by="vendas_ultimo_mes", ascending=False)
+# Calculando o acúmulo das vendas
+df_produto_ABC['proporcao_vendas_cumulativa'] = df_produto_ABC['vendas_ultimo_mes'].cumsum() / df_produto_ABC['vendas_ultimo_mes'].sum() 
+# Aplicando as regras para A B e C baseado nos acúmulos 70/20/10
+df_produto_ABC['CURVA_ABC'] = df_produto_ABC['proporcao_vendas_cumulativa'].apply(classificar_curva_abc)
+# Salvando o arquivo de produto_abc para excel
+df_produto_ABC.to_excel("produto_ABC.xlsx", index=False)
+# Removendo as colunas de cálculo do ABC para reintegrar a informação para o df_estoque
+df_produto_ABC.drop(['proporcao_vendas_cumulativa', 'vendas_ultimo_mes'], axis=1, inplace=True)
+# Adicionando a coluna CURVA_ABC em estoque por meio do merge
+df_atual = df_atual.merge(df_produto_ABC, on='nk_produto_grade', how='left')
+
+
+# Criando os dataframes que precisam de estoque
 df_deficit_atual = df_atual[df_atual['saldo_versus_cobertura'] < 0]
+
+# Criando os dataframes que possuem estoque em excesso
 df_cobertura_ok_atual = df_atual[df_atual['saldo_versus_cobertura'] >= 0]
 
-df_resumo_ajuste, df_resumo_compra = organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual)
+# Fazendo a operação que avalia quais transferências podem ser feitas ou compradas
+df_resumo_ajuste, df_resumo_compra = organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual, df_produto_ABC)
+
+# Organizando as transferências do maior para o menor em quantidade, logo importância.
 df_resumo_ajuste = df_resumo_ajuste.sort_values(by='transferencia_total', ascending=True)
 df_resumo_compra = df_resumo_compra.sort_values(by='saldo_necessario', ascending=False)
 
+# Salvando os arquivos em excel para possibilitar os downloads
 caminho_transferencias = 'resumo_ajuste.xlsx'
 caminho_compras = 'compras.xlsx'
 caminho_base = 'base-geral.xlsx'
 
 df_resumo_ajuste.to_excel(caminho_transferencias, index=False)
-df_resumo_compra.to_excel(caminho_compras)
-df_atual.to_excel(caminho_base)
+df_resumo_compra.to_excel(caminho_compras, index=False)
+df_atual.to_excel(caminho_base, index=False)
 df_deficit_atual.to_excel("base_deficit.xlsx", index = False)
 df_cobertura_ok_atual.to_excel("base_excedente.xlsx", index = False)
 
 
+# Parte do Streamlit
 st.set_page_config(page_title="Ajustes de Estoque", layout="wide")
 
+
+st.download_button(
+    label="Clique aqui para exportar a avaliação completa do estoque",
+    data=open(caminho_base, 'rb').read(),
+    file_name="base-geral.xlsx",
+    mime="text/xlsx"
+)
 st.title("Ajustes de Estoque")
 st.dataframe(df_resumo_ajuste)
 
 st.download_button(
-    label="Baixar Resumo de Transferências em CSV",
+    label="Baixar Resumo de Transferências em Excel",
     data=open(caminho_transferencias, 'rb').read(),
-    file_name="resumo_ajuste.csv",
-    mime="text/csv"
+    file_name="resumo_ajuste.xlsx",
+    mime="text/xlsx"
 )
 
 st.title("Recomendação de compras")
 st.dataframe(df_resumo_compra.head(len(df_resumo_ajuste)))
 
 st.download_button(
-    label="Baixar Resumo de Compras em CSV",
+    label="Baixar Resumo de Compras em Excel",
     data=open(caminho_compras, 'rb').read(),
-    file_name="compras.csv",
-    mime="text/csv"
+    file_name="compras.xlsx",
+    mime="text/xlsx"
 )
