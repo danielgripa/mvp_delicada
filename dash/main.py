@@ -43,10 +43,6 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual):
     df_resumo_ajuste = pd.DataFrame(resumo_ajuste)
     df_produtos_compra = pd.DataFrame(produtos_compra)
 
-    # Mesclar a coluna 'CURVA_ABC' nos DataFrames resultantes
-    df_resumo_ajuste = pd.merge(df_resumo_ajuste, df_deficit_atual[['nk_produto_grade', 'CURVA_ABC']], on='nk_produto_grade', how='left')
-    df_produtos_compra = pd.merge(df_produtos_compra, df_deficit_atual[['nk_produto_grade', 'CURVA_ABC']], on='nk_produto_grade', how='left')
-
     return df_resumo_ajuste, df_produtos_compra
 
 # Classificando os produtos de acordo com a Curva ABC
