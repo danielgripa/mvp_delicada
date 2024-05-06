@@ -174,6 +174,8 @@ df_cobertura_ok_atual.to_excel("base_excedente.xlsx", index = False)
 # Parte do Streamlit
 st.set_page_config(page_title="Ajustes de Estoque", layout="wide")
 
+video_url= os.environ.get("VIDEO")
+st.video(video_url)
 
 st.download_button(
     label="Clique aqui para exportar a avaliação completa do estoque",
@@ -200,3 +202,4 @@ st.download_button(
     file_name="compras.xlsx",
     mime="text/xlsx"
 )
+
