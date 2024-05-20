@@ -46,17 +46,16 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual, df_produto_
                     "quantidade_necessaria": abs(saldo)
                 })
 
-
     df_resumo_ajuste = pd.DataFrame(resumo_ajuste)
     df_produtos_compra = pd.DataFrame(produtos_compra)
 
     # Adicionar Curva ABC
-    df_resumo_ajuste = df_resumo_ajuste.merge(df_produto_ABC, left_on = "id_produto", right_on = "nk_produto_grade")
-    df_produtos_compra = df_produtos_compra.merge(df_produto_ABC, left_on = "id_produto", right_on = "nk_produto_grade")
+    df_resumo_ajuste = df_resumo_ajuste.merge(df_produto_ABC, left_on="id_produto", right_on="nk_produto_grade")
+    df_produtos_compra = df_produtos_compra.merge(df_produto_ABC, left_on="id_produto", right_on="nk_produto_grade")
 
-    # Remover a coluna nk_produto_grade pois ja existe um id_produto na tabela anterior
-    df_resumo_ajuste.drop('nk_produto_grade', axis = 1, inplace = True)
-    df_produtos_compra.drop('nk_produto_grade', axis = 1, inplace = True)
+    # Remover a coluna nk_produto_grade pois já existe um id_produto na tabela anterior
+    df_resumo_ajuste.drop('nk_produto_grade', axis=1, inplace=True)
+    df_produtos_compra.drop('nk_produto_grade', axis=1, inplace=True)
 
     # Resetar o índice de ambos os DataFrames
     df_resumo_ajuste.reset_index(drop=True, inplace=True)
@@ -93,10 +92,8 @@ df = df.drop_duplicates(subset=['nk_estoque'])
 # Convertendo 'sk_data' para tipo datetime
 df['sk_data'] = pd.to_datetime(df['sk_data'].astype(str), format='%Y%m%d')
 
-
 # Obtendo a data atual e convertendo para um período mensal
 ultimo_mes = pd.to_datetime(datetime.today()).to_period('M')
-
 
 # Filtrando dados para o mês anterior ao último mês
 df_last_month = df[df['sk_data'].dt.to_period('M') == ultimo_mes - 1]
@@ -132,9 +129,7 @@ df_atual = df.drop_duplicates(subset=['nk_entidade', 'nk_produto_grade'])
 # Ordenando o DataFrame por vendas em ordem decrescente
 df_atual = df_atual.sort_values(by='vendas_ultimo_mes', ascending=False)
 
-
 # Criando um dataframe de produto_ABC para calcular a curva ABC
-
 # Agrupando por produto e somando as vendas
 df_produto_ABC = df_atual.groupby('nk_produto_grade')['vendas_ultimo_mes'].sum().reset_index()
 # Classificando as qtd de vendas do maior para o menor
@@ -149,7 +144,6 @@ df_produto_ABC.to_excel("produto_ABC.xlsx", index=False)
 df_produto_ABC.drop(['proporcao_vendas_cumulativa', 'vendas_ultimo_mes'], axis=1, inplace=True)
 # Adicionando a coluna CURVA_ABC em estoque por meio do merge
 df_atual = df_atual.merge(df_produto_ABC, on='nk_produto_grade', how='left')
-
 
 # Criando os dataframes que precisam de estoque
 df_deficit_atual = df_atual[df_atual['saldo_versus_cobertura'] < 0]
@@ -172,9 +166,8 @@ caminho_base = 'base-geral.xlsx'
 df_resumo_ajuste.to_excel(caminho_transferencias, index=False)
 df_resumo_compra.to_excel(caminho_compras, index=False)
 df_atual.to_excel(caminho_base, index=False)
-df_deficit_atual.to_excel("base_deficit.xlsx", index = False)
-df_cobertura_ok_atual.to_excel("base_excedente.xlsx", index = False)
-
+df_deficit_atual.to_excel("base_deficit.xlsx", index=False)
+df_cobertura_ok_atual.to_excel("base_excedente.xlsx", index=False)
 
 # Parte do Streamlit
 st.set_page_config(page_title="Ajustes de Estoque", layout="wide")
@@ -204,4 +197,3 @@ st.download_button(
     file_name="compras.xlsx",
     mime="text/xlsx"
 )
-
