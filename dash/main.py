@@ -36,11 +36,16 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual, df_produto_
             })
         else:
             saldo_necessario = abs(total_deficit + total_cobertura)
-            produtos_compra.append({
-                "id_produto": produto_grade,
-                "descricao": nm_produto,
-                "saldo_necessario": saldo_necessario
-            })
+            receptores = dict(zip(df_deficit['nm_entidade'], df_deficit['saldo_versus_cobertura']))
+
+            for entidade, saldo in receptores.items():
+                produtos_compra.append({
+                    "id_produto": produto_grade,
+                    "descricao": nm_produto,
+                    "nm_entidade": entidade,
+                    "quantidade_necessaria": abs(saldo)
+                })
+
 
     df_resumo_ajuste = pd.DataFrame(resumo_ajuste)
     df_produtos_compra = pd.DataFrame(produtos_compra)
