@@ -43,7 +43,7 @@ def organizar_resumo_ajuste(df_deficit_atual, df_cobertura_ok_atual, df_produto_
                     "id_produto": produto_grade,
                     "descricao": nm_produto,
                     "nm_entidade": entidade,
-                    "quantidade_necessaria": abs(saldo)
+                    "saldo_necessario": abs(saldo)
                 })
 
     df_resumo_ajuste = pd.DataFrame(resumo_ajuste)
